@@ -342,6 +342,10 @@ console.log("Sum:", sum);
 arr.sort();
 console.log(arr.data);
 
+arr.forEach((value, index, array) => {
+    console.log(`Index ${index}: Value ${value}`);
+});
+
 const sliced = arr.slice(1, 4);
 console.log(sliced.data);
 
