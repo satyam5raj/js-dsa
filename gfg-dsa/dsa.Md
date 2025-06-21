@@ -936,7 +936,7 @@ Rearrange characters in a string such that no two adjacent are same.
 Minimum sum of two numbers formed from digits of an array
 
 
-Trie
+# Trie
 
 Construct a trie from scratch
 
