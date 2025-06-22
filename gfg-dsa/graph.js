@@ -1618,3 +1618,935 @@ console.log("Longest paths from A:", Object.fromEntries(longestPaths));
 
 // ===================================================================
 
+
+// ==================================================
+// 1. Total Number of Spanning Trees in a Graph
+// ==================================================
+/*
+Question: Given a connected undirected graph, find the total number of spanning trees.
+
+Approach: 
+- Use Kirchhoff's Matrix-Tree Theorem
+- Create Laplacian matrix L where L[i][j] = -1 if there's edge between i,j, else 0
+- L[i][i] = degree of vertex i
+- Remove any one row and column from L
+- Calculate determinant of resulting matrix
+
+Time Complexity: O(V³) where V is number of vertices
+Space Complexity: O(V²)
+*/
+
+function totalSpanningTrees(edges, vertices) {
+    // Create adjacency list to calculate degrees
+    const adj = Array(vertices).fill(null).map(() => []);
+    const degrees = Array(vertices).fill(0);
+    
+    for (let [u, v] of edges) {
+        adj[u].push(v);
+        adj[v].push(u);
+        degrees[u]++;
+        degrees[v]++;
+    }
+    
+    // Create Laplacian matrix
+    const laplacian = Array(vertices).fill(null).map(() => Array(vertices).fill(0));
+    
+    // Fill diagonal with degrees
+    for (let i = 0; i < vertices; i++) {
+        laplacian[i][i] = degrees[i];
+    }
+    
+    // Fill off-diagonal with -1 for edges
+    for (let [u, v] of edges) {
+        laplacian[u][v] = -1;
+        laplacian[v][u] = -1;
+    }
+    
+    // Remove last row and column
+    const matrix = laplacian.slice(0, vertices - 1).map(row => row.slice(0, vertices - 1));
+    
+    // Calculate determinant
+    return Math.abs(determinant(matrix));
+}
+
+function determinant(matrix) {
+    const n = matrix.length;
+    if (n === 1) return matrix[0][0];
+    if (n === 2) return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    
+    let det = 0;
+    for (let i = 0; i < n; i++) {
+        const subMatrix = matrix.slice(1).map(row => 
+            row.filter((_, colIndex) => colIndex !== i)
+        );
+        det += (i % 2 === 0 ? 1 : -1) * matrix[0][i] * determinant(subMatrix);
+    }
+    return det;
+}
+
+// Test case for spanning trees
+console.log("=== Test Case: Total Spanning Trees ===");
+const edges1 = [[0, 1], [1, 2], [2, 0], [1, 3]];
+console.log(`Edges: ${JSON.stringify(edges1)}`);
+console.log(`Total spanning trees: ${totalSpanningTrees(edges1, 4)}`);
+console.log();
+
+// ==================================================
+// 2. Detect Negative Cycle in a Graph
+// ==================================================
+/*
+Question: Given a weighted directed graph, detect if it contains a negative cycle.
+
+Approach: 
+- Use Bellman-Ford Algorithm
+- Relax all edges V-1 times
+- If we can still relax any edge in Vth iteration, negative cycle exists
+
+Time Complexity: O(VE) where V is vertices, E is edges
+Space Complexity: O(V)
+*/
+
+function hasNegativeCycle(vertices, edges) {
+    // Initialize distances
+    const dist = Array(vertices).fill(Infinity);
+    dist[0] = 0; // Start from vertex 0
+    
+    // Relax edges V-1 times
+    for (let i = 0; i < vertices - 1; i++) {
+        for (let [u, v, weight] of edges) {
+            if (dist[u] !== Infinity && dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+            }
+        }
+    }
+    
+    // Check for negative cycle
+    for (let [u, v, weight] of edges) {
+        if (dist[u] !== Infinity && dist[u] + weight < dist[v]) {
+            return true; // Negative cycle found
+        }
+    }
+    
+    return false;
+}
+
+// Test case for negative cycle detection
+console.log("=== Test Case: Negative Cycle Detection ===");
+const edges2 = [[0, 1, -1], [1, 2, -3], [2, 3, 2], [3, 1, -1]];
+console.log(`Edges with weights: ${JSON.stringify(edges2)}`);
+console.log(`Has negative cycle: ${hasNegativeCycle(4, edges2)}`);
+console.log();
+
+// ==================================================
+// 3. Journey to the Moon
+// ==================================================
+/*
+Question: Given astronauts from different countries, find number of ways to select 2 astronauts 
+from different countries. Input: pairs of astronauts from same country.
+
+Approach:
+- Use Union-Find to group astronauts by country
+- Count size of each connected component
+- Calculate pairs: total_pairs - same_country_pairs
+
+Time Complexity: O(n * α(n)) where α is inverse Ackermann function
+Space Complexity: O(n)
+*/
+
+class UnionFind {
+    constructor(n) {
+        this.parent = Array(n).fill(0).map((_, i) => i);
+        this.rank = Array(n).fill(0);
+    }
+    
+    find(x) {
+        if (this.parent[x] !== x) {
+            this.parent[x] = this.find(this.parent[x]);
+        }
+        return this.parent[x];
+    }
+    
+    union(x, y) {
+        const px = this.find(x);
+        const py = this.find(y);
+        
+        if (px === py) return;
+        
+        if (this.rank[px] < this.rank[py]) {
+            this.parent[px] = py;
+        } else if (this.rank[px] > this.rank[py]) {
+            this.parent[py] = px;
+        } else {
+            this.parent[py] = px;
+            this.rank[px]++;
+        }
+    }
+}
+
+function journeyToMoon(n, astronautPairs) {
+    const uf = new UnionFind(n);
+    
+    // Union astronauts from same country
+    for (let [a, b] of astronautPairs) {
+        uf.union(a, b);
+    }
+    
+    // Count component sizes
+    const componentSizes = {};
+    for (let i = 0; i < n; i++) {
+        const root = uf.find(i);
+        componentSizes[root] = (componentSizes[root] || 0) + 1;
+    }
+    
+    const sizes = Object.values(componentSizes);
+    const totalPairs = (n * (n - 1)) / 2;
+    
+    // Subtract pairs from same country
+    let sameCoutryPairs = 0;
+    for (let size of sizes) {
+        sameCoutryPairs += (size * (size - 1)) / 2;
+    }
+    
+    return totalPairs - sameCoutryPairs;
+}
+
+// Test case for Journey to Moon
+console.log("=== Test Case: Journey to Moon ===");
+const astronauts = [[0, 1], [2, 3], [0, 4]];
+console.log(`Astronaut pairs from same country: ${JSON.stringify(astronauts)}`);
+console.log(`Ways to select 2 from different countries: ${journeyToMoon(5, astronauts)}`);
+console.log();
+
+// ==================================================
+// 4. Cheapest Flights Within K Stops
+// ==================================================
+/*
+Question: Find cheapest flight from source to destination with at most K stops.
+
+Approach:
+- Use modified Dijkstra's algorithm with state (city, stops_used)
+- Priority queue contains [cost, city, stops]
+- Only process if stops <= k
+
+Time Complexity: O(E + V*K*log(V*K))
+Space Complexity: O(V*K)
+*/
+
+function findCheapestPrice(n, flights, src, dst, k) {
+    // Build adjacency list
+    const graph = Array(n).fill(null).map(() => []);
+    for (let [from, to, price] of flights) {
+        graph[from].push([to, price]);
+    }
+    
+    // Priority queue: [cost, city, stops]
+    const pq = [[0, src, 0]];
+    // visited[city][stops] = min_cost
+    const visited = Array(n).fill(null).map(() => Array(k + 2).fill(Infinity));
+    
+    while (pq.length > 0) {
+        pq.sort((a, b) => a[0] - b[0]);
+        const [cost, city, stops] = pq.shift();
+        
+        if (city === dst) return cost;
+        if (stops > k) continue;
+        if (visited[city][stops] < cost) continue;
+        
+        visited[city][stops] = cost;
+        
+        for (let [nextCity, price] of graph[city]) {
+            const newCost = cost + price;
+            const newStops = stops + 1;
+            
+            if (newStops <= k + 1 && newCost < visited[nextCity][newStops]) {
+                pq.push([newCost, nextCity, newStops]);
+            }
+        }
+    }
+    
+    return -1;
+}
+
+// Test case for Cheapest Flights
+console.log("=== Test Case: Cheapest Flights Within K Stops ===");
+const flights = [[0,1,100],[1,2,100],[0,2,500]];
+console.log(`Flights: ${JSON.stringify(flights)}`);
+console.log(`Cheapest price from 0 to 2 with at most 1 stop: ${findCheapestPrice(3, flights, 0, 2, 1)}`);
+console.log();
+
+// ==================================================
+// 5. Oliver and the Game
+// ==================================================
+/*
+Question: Given a tree, answer queries about ancestor-descendant relationships.
+
+Approach:
+- Use DFS to assign discovery and finish times
+- For vertex u to be ancestor of v: disc[u] < disc[v] && finish[u] > finish[v]
+
+Time Complexity: O(V + Q) where Q is number of queries
+Space Complexity: O(V)
+*/
+
+class OliverGame {
+    constructor(n) {
+        this.n = n;
+        this.adj = Array(n).fill(null).map(() => []);
+        this.disc = Array(n).fill(0);
+        this.finish = Array(n).fill(0);
+        this.time = 0;
+    }
+    
+    addEdge(u, v) {
+        this.adj[u].push(v);
+        this.adj[v].push(u);
+    }
+    
+    dfs(u, parent) {
+        this.disc[u] = this.time++;
+        
+        for (let v of this.adj[u]) {
+            if (v !== parent) {
+                this.dfs(v, u);
+            }
+        }
+        
+        this.finish[u] = this.time++;
+    }
+    
+    preprocess(root = 0) {
+        this.time = 0;
+        this.dfs(root, -1);
+    }
+    
+    isAncestor(u, v) {
+        return this.disc[u] < this.disc[v] && this.finish[u] > this.finish[v];
+    }
+}
+
+// Test case for Oliver and the Game
+console.log("=== Test Case: Oliver and the Game ===");
+const game = new OliverGame(5);
+game.addEdge(0, 1);
+game.addEdge(0, 2);
+game.addEdge(1, 3);
+game.addEdge(1, 4);
+game.preprocess(0);
+console.log(`Is 0 ancestor of 3? ${game.isAncestor(0, 3)}`);
+console.log(`Is 1 ancestor of 2? ${game.isAncestor(1, 2)}`);
+console.log();
+
+// ==================================================
+// 6. Find Path of More Than K Length
+// ==================================================
+/*
+Question: Find if there exists a simple path of length more than k from source.
+
+Approach:
+- Use DFS with backtracking
+- Keep track of visited vertices and current path length
+- Prune if current path + remaining vertices < k
+
+Time Complexity: O(V!) in worst case (exponential)
+Space Complexity: O(V)
+*/
+
+function hasPathMoreThanK(graph, src, k, visited = new Set(), currentLength = 0, vertices) {
+    if (currentLength > k) return true;
+    
+    visited.add(src);
+    
+    for (let [neighbor, weight] of graph[src] || []) {
+        if (!visited.has(neighbor)) {
+            if (hasPathMoreThanK(graph, neighbor, k, visited, currentLength + weight, vertices)) {
+                visited.delete(src);
+                return true;
+            }
+        }
+    }
+    
+    visited.delete(src);
+    return false;
+}
+
+// Test case for Path More Than K Length
+console.log("=== Test Case: Path More Than K Length ===");
+const graph6 = {
+    0: [[1, 4], [2, 3]],
+    1: [[2, 2], [3, 3]],
+    2: [[3, 5]],
+    3: []
+};
+console.log(`Graph: ${JSON.stringify(graph6)}`);
+console.log(`Has path from 0 with length > 6? ${hasPathMoreThanK(graph6, 0, 6, new Set(), 0, 4)}`);
+console.log();
+
+// ==================================================
+// 7. M-Coloring Problem
+// ==================================================
+/*
+Question: Check if graph can be colored with M colors such that no adjacent vertices have same color.
+
+Approach:
+- Use backtracking
+- Try each color for each vertex
+- Check if assignment is safe (no adjacent vertex has same color)
+
+Time Complexity: O(M^V)
+Space Complexity: O(V)
+*/
+
+function isSafeToColor(graph, vertex, color, coloring) {
+    for (let i = 0; i < graph.length; i++) {
+        if (graph[vertex][i] && coloring[i] === color) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function solveColoring(graph, m, vertex, coloring) {
+    if (vertex === graph.length) return true;
+    
+    for (let c = 1; c <= m; c++) {
+        if (isSafeToColor(graph, vertex, c, coloring)) {
+            coloring[vertex] = c;
+            
+            if (solveColoring(graph, m, vertex + 1, coloring)) {
+                return true;
+            }
+            
+            coloring[vertex] = 0; // backtrack
+        }
+    }
+    
+    return false;
+}
+
+function mColoring(graph, m) {
+    const coloring = Array(graph.length).fill(0);
+    return solveColoring(graph, m, 0, coloring) ? coloring : null;
+}
+
+// Test case for M-Coloring
+console.log("=== Test Case: M-Coloring Problem ===");
+const colorGph = [
+    [0, 1, 1, 1],
+    [1, 0, 1, 0],
+    [1, 1, 0, 1],
+    [1, 0, 1, 0]
+];
+console.log(`Graph adjacency matrix: ${JSON.stringify(colorGph)}`);
+console.log(`3-coloring solution: ${JSON.stringify(mColoring(colorGph, 3))}`);
+console.log();
+
+// ==================================================
+// 8. Minimum Edges to Reverse
+// ==================================================
+/*
+Question: Find minimum edges to reverse to make path from source to destination.
+
+Approach:
+- Create modified graph where original edges have weight 0, reverse edges have weight 1
+- Use Dijkstra's algorithm to find shortest path
+- Result is minimum reversals needed
+
+Time Complexity: O((V + E) log V)
+Space Complexity: O(V + E)
+*/
+
+function minEdgeReverse(edges, n, src, dest) {
+    // Build adjacency list with weights
+    const graph = Array(n).fill(null).map(() => []);
+    
+    for (let [u, v] of edges) {
+        graph[u].push([v, 0]); // original edge, no cost
+        graph[v].push([u, 1]); // reverse edge, cost 1
+    }
+    
+    // Dijkstra's algorithm
+    const dist = Array(n).fill(Infinity);
+    const pq = [[0, src]]; // [distance, vertex]
+    dist[src] = 0;
+    
+    while (pq.length > 0) {
+        pq.sort((a, b) => a[0] - b[0]);
+        const [d, u] = pq.shift();
+        
+        if (d > dist[u]) continue;
+        
+        for (let [v, weight] of graph[u]) {
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+                pq.push([dist[v], v]);
+            }
+        }
+    }
+    
+    return dist[dest] === Infinity ? -1 : dist[dest];
+}
+
+// Test case for Minimum Edge Reverse
+console.log("=== Test Case: Minimum Edges to Reverse ===");
+const directedEdges = [[0, 1], [2, 1], [2, 3], [3, 4]];
+console.log(`Directed edges: ${JSON.stringify(directedEdges)}`);
+console.log(`Min edges to reverse from 0 to 4: ${minEdgeReverse(directedEdges, 5, 0, 4)}`);
+console.log();
+
+// ==================================================
+// 9. Seven Bridges of Königsberg (Eulerian Path)
+// ==================================================
+/*
+Question: Find if there exists a path that visits every edge exactly once.
+
+Approach:
+- For Eulerian Path: exactly 0 or 2 vertices with odd degree
+- For Eulerian Cycle: all vertices have even degree
+- Use DFS to find the actual path
+
+Time Complexity: O(V + E)
+Space Complexity: O(V + E)
+*/
+
+function findEulerianPath(edges, vertices) {
+    // Build adjacency list and calculate degrees
+    const graph = Array(vertices).fill(null).map(() => []);
+    const degree = Array(vertices).fill(0);
+    
+    for (let [u, v] of edges) {
+        graph[u].push(v);
+        graph[v].push(u);
+        degree[u]++;
+        degree[v]++;
+    }
+    
+    // Check Eulerian conditions
+    let oddDegreeVertices = 0;
+    let startVertex = 0;
+    
+    for (let i = 0; i < vertices; i++) {
+        if (degree[i] % 2 === 1) {
+            oddDegreeVertices++;
+            startVertex = i; // Start from odd degree vertex
+        }
+    }
+    
+    if (oddDegreeVertices !== 0 && oddDegreeVertices !== 2) {
+        return { hasPath: false, path: [] };
+    }
+    
+    // Find Eulerian path using Hierholzer's algorithm
+    const path = [];
+    const stack = [startVertex];
+    const tempGraph = graph.map(adj => [...adj]); // Copy for modification
+    
+    while (stack.length > 0) {
+        const v = stack[stack.length - 1];
+        
+        if (tempGraph[v].length > 0) {
+            const u = tempGraph[v].pop();
+            // Remove reverse edge
+            const index = tempGraph[u].indexOf(v);
+            if (index > -1) tempGraph[u].splice(index, 1);
+            stack.push(u);
+        } else {
+            path.push(stack.pop());
+        }
+    }
+    
+    return { hasPath: path.length === edges.length + 1, path: path.reverse() };
+}
+
+// Test case for Seven Bridges
+console.log("=== Test Case: Seven Bridges (Eulerian Path) ===");
+const bridgeEdges = [[0, 1], [0, 2], [1, 2], [1, 3], [2, 3]];
+console.log(`Edges: ${JSON.stringify(bridgeEdges)}`);
+const eulerResult = findEulerianPath(bridgeEdges, 4);
+console.log(`Has Eulerian path: ${eulerResult.hasPath}`);
+console.log(`Path: ${JSON.stringify(eulerResult.path)}`);
+console.log();
+
+// ==================================================
+// 10. Vertex Cover Problem
+// ==================================================
+/*
+Question: Find minimum set of vertices such that every edge has at least one endpoint in the set.
+
+Approach:
+- This is NP-hard, using approximation algorithm
+- Greedy: repeatedly pick vertex with maximum uncovered edges
+- For exact solution: use backtracking (exponential time)
+
+Time Complexity: O(V²E) for approximation
+Space Complexity: O(V)
+*/
+
+function vertexCoverApprox(edges, vertices) {
+    const cover = new Set();
+    const uncoveredEdges = new Set(edges.map(edge => edge.join(',')));
+    
+    while (uncoveredEdges.size > 0) {
+        // Count uncovered edges for each vertex
+        const vertexCount = Array(vertices).fill(0);
+        
+        for (let edgeStr of uncoveredEdges) {
+            const [u, v] = edgeStr.split(',').map(Number);
+            vertexCount[u]++;
+            vertexCount[v]++;
+        }
+        
+        // Find vertex with maximum uncovered edges
+        let maxVertex = 0;
+        for (let i = 1; i < vertices; i++) {
+            if (vertexCount[i] > vertexCount[maxVertex]) {
+                maxVertex = i;
+            }
+        }
+        
+        cover.add(maxVertex);
+        
+        // Remove edges covered by this vertex
+        const toRemove = [];
+        for (let edgeStr of uncoveredEdges) {
+            const [u, v] = edgeStr.split(',').map(Number);
+            if (u === maxVertex || v === maxVertex) {
+                toRemove.push(edgeStr);
+            }
+        }
+        
+        for (let edge of toRemove) {
+            uncoveredEdges.delete(edge);
+        }
+    }
+    
+    return Array.from(cover);
+}
+
+// Test case for Vertex Cover
+console.log("=== Test Case: Vertex Cover Problem ===");
+const vcEdges = [[0, 1], [0, 2], [1, 3], [2, 3], [1, 4]];
+console.log(`Edges: ${JSON.stringify(vcEdges)}`);
+console.log(`Approximate vertex cover: ${JSON.stringify(vertexCoverApprox(vcEdges, 5))}`);
+console.log();
+
+// ==================================================
+// 11. Chinese Postman Problem
+// ==================================================
+/*
+Question: Find shortest closed walk that visits every edge at least once.
+
+Approach:
+- If graph is Eulerian (all even degrees): return sum of edge weights
+- Find odd degree vertices, find minimum weight perfect matching
+- Add matching edges and find Eulerian circuit
+
+Time Complexity: O(V³) for matching + O(E) for circuit
+Space Complexity: O(V²)
+*/
+
+function chinesePostman(edges, vertices) {
+    // Build adjacency matrix with weights
+    const graph = Array(vertices).fill(null).map(() => Array(vertices).fill(Infinity));
+    const degree = Array(vertices).fill(0);
+    let totalWeight = 0;
+    
+    for (let i = 0; i < vertices; i++) {
+        graph[i][i] = 0;
+    }
+    
+    for (let [u, v, w] of edges) {
+        graph[u][v] = Math.min(graph[u][v], w);
+        graph[v][u] = Math.min(graph[v][u], w);
+        degree[u]++;
+        degree[v]++;
+        totalWeight += w;
+    }
+    
+    // Find odd degree vertices
+    const oddVertices = [];
+    for (let i = 0; i < vertices; i++) {
+        if (degree[i] % 2 === 1) {
+            oddVertices.push(i);
+        }
+    }
+    
+    if (oddVertices.length === 0) {
+        return totalWeight; // Already Eulerian
+    }
+    
+    // Floyd-Warshall for shortest paths between odd vertices
+    for (let k = 0; k < vertices; k++) {
+        for (let i = 0; i < vertices; i++) {
+            for (let j = 0; j < vertices; j++) {
+                if (graph[i][k] + graph[k][j] < graph[i][j]) {
+                    graph[i][j] = graph[i][k] + graph[k][j];
+                }
+            }
+        }
+    }
+    
+    // Simple minimum weight perfect matching (for small graphs)
+    function minMatchingWeight(vertices, memo = new Map()) {
+        if (vertices.length === 0) return 0;
+        
+        const key = vertices.sort().join(',');
+        if (memo.has(key)) return memo.get(key);
+        
+        const first = vertices[0];
+        let minCost = Infinity;
+        
+        for (let i = 1; i < vertices.length; i++) {
+            const partner = vertices[i];
+            const remaining = vertices.filter((v, idx) => idx !== 0 && idx !== i);
+            const cost = graph[first][partner] + minMatchingWeight(remaining, memo);
+            minCost = Math.min(minCost, cost);
+        }
+        
+        memo.set(key, minCost);
+        return minCost;
+    }
+    
+    const matchingCost = minMatchingWeight(oddVertices);
+    return totalWeight + matchingCost;
+}
+
+// Test case for Chinese Postman
+console.log("=== Test Case: Chinese Postman Problem ===");
+const postmanEdges = [[0, 1, 2], [1, 2, 3], [2, 0, 4], [1, 3, 1]];
+console.log(`Weighted edges: ${JSON.stringify(postmanEdges)}`);
+console.log(`Minimum tour weight: ${chinesePostman(postmanEdges, 4)}`);
+console.log();
+
+// ==================================================
+// 12. Number of Triangles in Graph
+// ==================================================
+/*
+Question: Count total number of triangles in undirected/directed graph.
+
+Approach:
+- For undirected: For each edge (u,v), count common neighbors
+- For directed: Check all possible orientations of triangles
+
+Time Complexity: O(V³) or O(V * E)
+Space Complexity: O(V²)
+*/
+
+function countTrianglesUndirected(edges, vertices) {
+    // Build adjacency list
+    const adj = Array(vertices).fill(null).map(() => new Set());
+    
+    for (let [u, v] of edges) {
+        adj[u].add(v);
+        adj[v].add(u);
+    }
+    
+    let triangles = 0;
+    
+    // For each vertex, check pairs of its neighbors
+    for (let u = 0; u < vertices; u++) {
+        const neighbors = Array.from(adj[u]);
+        
+        for (let i = 0; i < neighbors.length; i++) {
+            for (let j = i + 1; j < neighbors.length; j++) {
+                const v = neighbors[i];
+                const w = neighbors[j];
+                
+                // Check if v and w are connected
+                if (adj[v].has(w)) {
+                    triangles++;
+                }
+            }
+        }
+    }
+    
+    return triangles / 3; // Each triangle counted 3 times
+}
+
+function countTrianglesDirected(edges, vertices) {
+    const adj = Array(vertices).fill(null).map(() => new Set());
+    
+    for (let [u, v] of edges) {
+        adj[u].add(v);
+    }
+    
+    let triangles = 0;
+    
+    for (let u = 0; u < vertices; u++) {
+        for (let v of adj[u]) {
+            for (let w of adj[v]) {
+                if (adj[w].has(u)) {
+                    triangles++;
+                }
+            }
+        }
+    }
+    
+    return triangles;
+}
+
+// Test case for Triangle Count
+console.log("=== Test Case: Number of Triangles ===");
+const triangleEdges = [[0, 1], [1, 2], [2, 0], [1, 3], [3, 2]];
+console.log(`Edges: ${JSON.stringify(triangleEdges)}`);
+console.log(`Triangles in undirected graph: ${countTrianglesUndirected(triangleEdges, 4)}`);
+console.log();
+
+// ==================================================
+// 13. Minimize Cashflow Among Friends
+// ==================================================
+/*
+Question: Given debts between friends, minimize number of transactions to settle all debts.
+
+Approach:
+- Calculate net balance for each person
+- Recursively match creditors with debtors
+- Use backtracking to find minimum transactions
+
+Time Complexity: O(2^n) in worst case
+Space Complexity: O(n)
+*/
+
+function minimizeCashFlow(transactions) {
+    // Calculate net balance for each person
+    const balance = {};
+    
+    for (let [from, to, amount] of transactions) {
+        balance[from] = (balance[from] || 0) - amount;
+        balance[to] = (balance[to] || 0) + amount;
+    }
+    
+    // Get non-zero balances
+    const balances = Object.values(balance).filter(b => b !== 0);
+    
+    if (balances.length === 0) return 0;
+    
+    function dfs(balances) {
+        // Remove zeros
+        balances = balances.filter(b => b !== 0);
+        
+        if (balances.length <= 1) return 0;
+        
+        const first = balances[0];
+        let minTransactions = Infinity;
+        
+        for (let i = 1; i < balances.length; i++) {
+            if (balances[i] * first < 0) { // Opposite signs
+                const newBalances = [...balances];
+                newBalances[i] += first;
+                newBalances.splice(0, 1); // Remove first
+                
+                minTransactions = Math.min(minTransactions, 1 + dfs(newBalances));
+            }
+        }
+        
+        return minTransactions;
+    }
+    
+    return dfs(balances);
+}
+
+// Test case for Minimize Cashflow
+console.log("=== Test Case: Minimize Cashflow ===");
+const cashTransactions = [['A', 'B', 100], ['B', 'C', 50], ['C', 'A', 75]];
+console.log(`Transactions: ${JSON.stringify(cashTransactions)}`);
+console.log(`Minimum transactions needed: ${minimizeCashFlow(cashTransactions)}`);
+console.log();
+
+// ==================================================
+// 14. Two Clique Problem
+// ==================================================
+/*
+Question: Check if vertices of graph can be divided into two cliques.
+
+Approach:
+- A graph can be divided into two cliques if and only if its complement is bipartite
+- Create complement graph and check if it's bipartite using BFS/DFS coloring
+- If complement is bipartite, original graph can be divided into two cliques
+
+Time Complexity: O(V²)
+Space Complexity: O(V²)
+*/
+
+function canDivideIntoTwoCliques(edges, vertices) {
+    // Create adjacency matrix for original graph
+    const graph = Array(vertices).fill(null).map(() => Array(vertices).fill(false));
+    
+    for (let [u, v] of edges) {
+        graph[u][v] = true;
+        graph[v][u] = true;
+    }
+    
+    // Create complement graph
+    const complement = Array(vertices).fill(null).map(() => Array(vertices).fill(false));
+    
+    for (let i = 0; i < vertices; i++) {
+        for (let j = 0; j < vertices; j++) {
+            if (i !== j && !graph[i][j]) {
+                complement[i][j] = true;
+            }
+        }
+    }
+    
+    // Check if complement is bipartite
+    const color = Array(vertices).fill(-1);
+    
+    function isBipartite(start) {
+        const queue = [start];
+        color[start] = 0;
+        
+        while (queue.length > 0) {
+            const u = queue.shift();
+            
+            for (let v = 0; v < vertices; v++) {
+                if (complement[u][v]) {
+                    if (color[v] === -1) {
+                        color[v] = 1 - color[u];
+                        queue.push(v);
+                    } else if (color[v] === color[u]) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    // Check all components
+    for (let i = 0; i < vertices; i++) {
+        if (color[i] === -1) {
+            if (!isBipartite(i)) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Test case for Two Clique Problem
+console.log("=== Test Case: Two Clique Problem ===");
+const cliqueEdges = [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]];
+console.log(`Edges: ${JSON.stringify(cliqueEdges)}`);
+console.log(`Can be divided into two cliques: ${canDivideIntoTwoCliques(cliqueEdges, 4)}`);
+console.log();
+
+// ==================================================
+// SUMMARY OF ALL PROBLEMS
+// ==================================================
+console.log("=== SUMMARY ===");
+console.log("1. Total Spanning Trees: Use Matrix-Tree Theorem - O(V³)");
+console.log("2. Negative Cycle Detection: Bellman-Ford Algorithm - O(VE)");
+console.log("3. Journey to Moon: Union-Find for connected components - O(n·α(n))");
+console.log("4. Cheapest Flights K Stops: Modified Dijkstra - O(E + V·K·log(V·K))");
+console.log("5. Oliver and Game: DFS with discovery/finish times - O(V + E)");
+console.log("6. Path More Than K: DFS with backtracking - O(V!)");
+console.log("7. M-Coloring: Backtracking algorithm - O(M^V)");
+console.log("8. Min Edge Reverse: Dijkstra on modified graph - O((V+E)logV)");
+console.log("9. Seven Bridges: Eulerian path using Hierholzer's - O(V + E)");
+console.log("10. Vertex Cover: Greedy approximation - O(V²E)");
+console.log("11. Chinese Postman: Minimum weight perfect matching - O(V³)");
+console.log("12. Triangle Count: Check all vertex triplets - O(V³)");
+console.log("13. Minimize Cashflow: Backtracking on net balances - O(2^n)");
+console.log("14. Two Clique: Check if complement is bipartite - O(V²)");
+console.log();
+console.log("All test cases completed! 🎉");

@@ -1422,3 +1422,345 @@ console.log("- Time and space complexity analysis");
 console.log("- Complete working implementation");
 console.log("- Test cases with expected outputs");
 console.log("=".repeat(80));
+
+
+
+// ========================================
+// PROBLEM 1: DIEHARD - DIE HARD
+// ========================================
+
+/*
+Question: You have H health and A armor. You can live in 3 places:
+- Air: +3 health, +2 armor
+- Water: -5 health, -10 armor  
+- Fire: -20 health, +5 armor
+You must change location every unit time. Find maximum survival time.
+
+Approach: 
+- Always start with Air as it gives positive benefits
+- Use recursion with memoization to explore all possible paths
+- At each step, choose the location that maximizes survival time
+- Base case: if health <= 0 or armor <= 0, return 0
+
+Time Complexity: O(H * A) where H is health and A is armor
+Space Complexity: O(H * A) for memoization
+*/
+
+function dieHard(H, A) {
+    // Memoization map
+    const memo = new Map();
+    
+    function solve(health, armor, lastPlace) {
+        // Base case: if health or armor <= 0, cannot survive
+        if (health <= 0 || armor <= 0) {
+            return 0;
+        }
+        
+        // Create key for memoization
+        const key = `${health},${armor},${lastPlace}`;
+        if (memo.has(key)) {
+            return memo.get(key);
+        }
+        
+        let maxTime = 0;
+        
+        // Try all possible moves except staying in same place
+        if (lastPlace !== 'air') {
+            // Go to air: +3 health, +2 armor
+            maxTime = Math.max(maxTime, 1 + solve(health + 3, armor + 2, 'air'));
+        }
+        if (lastPlace !== 'water') {
+            // Go to water: -5 health, -10 armor
+            maxTime = Math.max(maxTime, 1 + solve(health - 5, armor - 10, 'water'));
+        }
+        if (lastPlace !== 'fire') {
+            // Go to fire: -20 health, +5 armor
+            maxTime = Math.max(maxTime, 1 + solve(health - 20, armor + 5, 'fire'));
+        }
+        
+        memo.set(key, maxTime);
+        return maxTime;
+    }
+    
+    // Start from any place (we'll try all three)
+    return Math.max(
+        solve(H + 3, A + 2, 'air'),
+        solve(H - 5, A - 10, 'water'),
+        solve(H - 20, A + 5, 'fire')
+    );
+}
+
+// Test cases for DIEHARD
+console.log("=== DIEHARD Test Cases ===");
+console.log("Test 1 (H=2, A=10):", dieHard(2, 10)); // Expected: 4
+console.log("Test 2 (H=4, A=4):", dieHard(4, 4)); // Expected: 1
+console.log("Test 3 (H=20, A=8):", dieHard(20, 8)); // Expected: 5
+
+// ========================================
+// PROBLEM 2: GERGOVIA - Wine Trading
+// ========================================
+
+/*
+Question: Houses in a line want to buy/sell wine. Each house has a value:
+positive = wants to sell that amount, negative = wants to buy that amount.
+Find minimum work (distance * amount) to satisfy all trades.
+
+Approach:
+- Use prefix sum to track running balance
+- At each position, calculate how much wine needs to be transported
+- The absolute value of running sum represents wine being carried
+- Sum all transportation costs
+
+Time Complexity: O(n) where n is number of houses
+Space Complexity: O(1)
+*/
+
+function wineTrading(houses) {
+    let runningSum = 0;
+    let totalWork = 0;
+    
+    // Process each house except the last one
+    for (let i = 0; i < houses.length - 1; i++) {
+        runningSum += houses[i];
+        // Absolute value represents wine being transported to next house
+        totalWork += Math.abs(runningSum);
+    }
+    
+    return totalWork;
+}
+
+// Test cases for GERGOVIA
+console.log("\n=== GERGOVIA Test Cases ===");
+console.log("Test 1 ([5, -4, 1, -3, 1]):", wineTrading([5, -4, 1, -3, 1])); // Expected: 9
+console.log("Test 2 ([1, -1, 0]):", wineTrading([1, -1, 0])); // Expected: 1
+console.log("Test 3 ([1, -2, 1]):", wineTrading([1, -2, 1])); // Expected: 2
+
+// ========================================
+// PROBLEM 3: Picking Up Chicks
+// ========================================
+
+/*
+Question: N chicks at positions, moving at speeds. They need to reach position B 
+within time T. You can swap adjacent chicks K times. Find max chicks that can reach.
+
+Approach:
+- Calculate which chicks can potentially reach destination
+- Use greedy approach: help the rightmost chicks first
+- Count how many swaps are needed and available
+
+Time Complexity: O(n²) in worst case
+Space Complexity: O(n)
+*/
+
+function pickingUpChicks(positions, speeds, B, T, K) {
+    const n = positions.length;
+    const canReach = [];
+    
+    // Find chicks that can potentially reach destination
+    for (let i = 0; i < n; i++) {
+        const maxReach = positions[i] + speeds[i] * T;
+        if (maxReach >= B) {
+            canReach.push(i);
+        }
+    }
+    
+    let swapsUsed = 0;
+    let chicksReached = 0;
+    
+    // Start from rightmost chick that can reach
+    for (let i = canReach.length - 1; i >= 0; i--) {
+        const chickIndex = canReach[i];
+        // Count chicks to the right that cannot reach
+        let chicksToSwap = 0;
+        
+        for (let j = chickIndex + 1; j < n; j++) {
+            const maxReach = positions[j] + speeds[j] * T;
+            if (maxReach < B) {
+                chicksToSwap++;
+            }
+        }
+        
+        if (swapsUsed + chicksToSwap <= K) {
+            swapsUsed += chicksToSwap;
+            chicksReached++;
+        }
+    }
+    
+    return chicksReached;
+}
+
+// Test cases for Picking Up Chicks
+console.log("\n=== Picking Up Chicks Test Cases ===");
+console.log("Test 1:", pickingUpChicks([0, 2, 5], [2, 0, 3], 6, 2, 1)); // Expected: 2
+console.log("Test 2:", pickingUpChicks([0, 1, 2, 3], [2, 2, 2, 2], 5, 1, 2)); // Expected: 3
+
+// ========================================
+// PROBLEM 4: CHOCOLA - Chocolate Breaking
+// ========================================
+
+/*
+Question: Break chocolate bar optimally. Cost = length of cut * number of pieces
+the cut will create. Given horizontal and vertical cut costs.
+
+Approach:
+- Sort cuts in descending order by cost
+- Always make the most expensive cut first
+- Keep track of number of pieces in each direction
+- Greedy: expensive cuts should be made when fewer pieces exist
+
+Time Complexity: O(n log n + m log m) where n, m are number of cuts
+Space Complexity: O(1)
+*/
+
+function chocolateBreaking(horizontalCosts, verticalCosts) {
+    // Sort in descending order
+    horizontalCosts.sort((a, b) => b - a);
+    verticalCosts.sort((a, b) => b - a);
+    
+    let totalCost = 0;
+    let horizontalPieces = 1; // Number of horizontal pieces
+    let verticalPieces = 1;   // Number of vertical pieces
+    let h = 0, v = 0;         // Pointers for cuts
+    
+    // Make cuts greedily - always choose the more expensive cut
+    while (h < horizontalCosts.length && v < verticalCosts.length) {
+        if (horizontalCosts[h] > verticalCosts[v]) {
+            // Make horizontal cut
+            totalCost += horizontalCosts[h] * verticalPieces;
+            horizontalPieces++;
+            h++;
+        } else {
+            // Make vertical cut
+            totalCost += verticalCosts[v] * horizontalPieces;
+            verticalPieces++;
+            v++;
+        }
+    }
+    
+    // Make remaining horizontal cuts
+    while (h < horizontalCosts.length) {
+        totalCost += horizontalCosts[h] * verticalPieces;
+        horizontalPieces++;
+        h++;
+    }
+    
+    // Make remaining vertical cuts
+    while (v < verticalCosts.length) {
+        totalCost += verticalCosts[v] * horizontalPieces;
+        verticalPieces++;
+        v++;
+    }
+    
+    return totalCost;
+}
+
+// Test cases for CHOCOLA
+console.log("\n=== CHOCOLA Test Cases ===");
+console.log("Test 1:", chocolateBreaking([2, 1, 3, 1, 4], [4, 1, 2])); // Expected: 42
+console.log("Test 2:", chocolateBreaking([1, 2], [3, 4])); // Expected: 19
+
+// ========================================
+// PROBLEM 5: ARRANGE - Arranging Amplifiers
+// ========================================
+
+/*
+Question: Arrange amplifiers to minimize total wire length. Each amplifier 
+has a position and needs to be connected to adjacent amplifiers.
+
+Approach:
+- Sort amplifiers by position
+- Use median approach for optimal arrangement
+- Calculate minimum total distance
+
+Time Complexity: O(n log n) for sorting
+Space Complexity: O(1)
+*/
+
+function arrangeAmplifiers(positions) {
+    // Sort positions
+    positions.sort((a, b) => a - b);
+    const n = positions.length;
+    
+    if (n <= 1) return 0;
+    
+    // Find median position
+    const median = positions[Math.floor(n / 2)];
+    
+    // Calculate total distance from median
+    let totalDistance = 0;
+    for (let pos of positions) {
+        totalDistance += Math.abs(pos - median);
+    }
+    
+    return totalDistance;
+}
+
+// Alternative approach: minimum spanning tree like solution
+function arrangeAmplifiersLinear(positions) {
+    positions.sort((a, b) => a - b);
+    let totalWire = 0;
+    
+    // Connect each amplifier to the next in sorted order
+    for (let i = 1; i < positions.length; i++) {
+        totalWire += positions[i] - positions[i - 1];
+    }
+    
+    return totalWire;
+}
+
+// Test cases for ARRANGE
+console.log("\n=== ARRANGE Test Cases ===");
+console.log("Test 1 (median approach):", arrangeAmplifiers([1, 4, 9, 16])); // Distance from median
+console.log("Test 1 (linear approach):", arrangeAmplifiersLinear([1, 4, 9, 16])); // Expected: 15
+console.log("Test 2 (linear approach):", arrangeAmplifiersLinear([2, 6, 8, 10])); // Expected: 8
+
+// ========================================
+// BONUS: Activity Selection Problem
+// ========================================
+
+/*
+Question: Select maximum number of non-overlapping activities given start and end times.
+
+Approach:
+- Sort activities by end time
+- Greedily select activities that don't overlap with previously selected
+- Always choose activity that ends earliest
+
+Time Complexity: O(n log n) for sorting
+Space Complexity: O(n) for storing activities
+*/
+
+function activitySelection(start, end) {
+    const n = start.length;
+    const activities = [];
+    
+    // Create activity objects with start, end, and original index
+    for (let i = 0; i < n; i++) {
+        activities.push({ start: start[i], end: end[i], index: i });
+    }
+    
+    // Sort by end time
+    activities.sort((a, b) => a.end - b.end);
+    
+    const selected = [];
+    let lastEndTime = 0;
+    
+    for (let activity of activities) {
+        if (activity.start >= lastEndTime) {
+            selected.push(activity.index);
+            lastEndTime = activity.end;
+        }
+    }
+    
+    return selected;
+}
+
+// Test case for Activity Selection
+console.log("\n=== Activity Selection Test Case ===");
+const starts = [1, 3, 0, 5, 8, 5];
+const ends = [2, 4, 6, 7, 9, 9];
+console.log("Selected activities:", activitySelection(starts, ends)); // Expected: [0, 1, 3, 4]
+
+console.log("\n=== Summary ===");
+console.log("All greedy algorithm problems solved with optimal approaches!");
+console.log("Each solution includes time/space complexity analysis and test cases.");

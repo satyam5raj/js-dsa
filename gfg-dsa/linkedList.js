@@ -74,12 +74,12 @@ function reverseListRecursive(head) {
 
 // Test Case
 console.log("1. Reverse Linked List:");
-let list1 = createLinkedList([1, 2, 3, 4, 5]);
-console.log("Original:", printLinkedList(list1));
-console.log("Reversed (Iterative):", printLinkedList(reverseListIterative(list1)));
+let lst1 = createLinkedList([1, 2, 3, 4, 5]);
+console.log("Original:", printLinkedList(lst1));
+console.log("Reversed (Iterative):", printLinkedList(reverseListIterative(lst1)));
 
-list1 = createLinkedList([1, 2, 3, 4, 5]);
-console.log("Reversed (Recursive):", printLinkedList(reverseListRecursive(list1)));
+lst1 = createLinkedList([1, 2, 3, 4, 5]);
+console.log("Reversed (Recursive):", printLinkedList(reverseListRecursive(lst1)));
 
 // 2. Reverse a Linked List in group of Given Size
 /**
@@ -117,9 +117,9 @@ function reverseKGroup(head, k) {
 
 // Test Case
 console.log("\n2. Reverse in Groups of K:");
-let list2 = createLinkedList([1, 2, 3, 4, 5, 6, 7, 8]);
-console.log("Original:", printLinkedList(list2));
-console.log("Reversed in groups of 3:", printLinkedList(reverseKGroup(list2, 3)));
+let lst2 = createLinkedList([1, 2, 3, 4, 5, 6, 7, 8]);
+console.log("Original:", printLinkedList(lst2));
+console.log("Reversed in groups of 3:", printLinkedList(reverseKGroup(lst2, 3)));
 
 // 3. Detect Loop in a Linked List
 /**
@@ -1279,3 +1279,269 @@ console.log("• Reversing parts of LL is a common technique");
 console.log("• Merge sort is preferred over quick sort for linked lists");
 console.log("• Space complexity can often be optimized to O(1) with careful pointer manipulation");
 console.log("• Many problems can be solved by combining basic operations like reverse, merge, etc.");
+
+
+
+/**
+ * PROBLEM: Rotate a Doubly Linked List in Groups of Given Size
+ * 
+ * Given a doubly linked list and an integer k, rotate the linked list 
+ * to the right by k positions in groups.
+ * 
+ * Example:
+ * Input: 1<->2<->3<->4<->5<->6<->7<->8, k = 3
+ * Output: 3<->2<->1<->6<->5<->4<->8<->7
+ * 
+ * Explanation: We divide the list into groups of 3:
+ * Group 1: 1<->2<->3 becomes 3<->2<->1
+ * Group 2: 4<->5<->6 becomes 6<->5<->4  
+ * Group 3: 7<->8 (less than k, so reverse it) becomes 8<->7
+ */
+
+// Node class for Doubly Linked List
+class DoublyListNode {
+    constructor(val = 0, next = null, prev = null) {
+        this.val = val;
+        this.next = next;
+        this.prev = prev;
+    }
+}
+
+/**
+ * APPROACH:
+ * 1. Traverse the list in groups of k nodes
+ * 2. For each group, reverse the connections between nodes
+ * 3. Keep track of previous group's tail to connect with current group's head
+ * 4. Handle the case where last group has fewer than k nodes
+ * 5. Update prev and next pointers for doubly linked list
+ * 
+ * TIME COMPLEXITY: O(n) where n is the number of nodes
+ * SPACE COMPLEXITY: O(1) - only using constant extra space
+ */
+
+function rotateDoublyLinkedList(head, k) {
+    // Edge cases
+    if (!head || !head.next || k <= 1) {
+        return head;
+    }
+    
+    let current = head;
+    let prevGroupTail = null;
+    let newHead = null;
+    
+    while (current) {
+        // Find the start of current group
+        let groupStart = current;
+        let groupEnd = current;
+        let count = 1;
+        
+        // Move to the end of current group (k nodes or till end of list)
+        while (groupEnd.next && count < k) {
+            groupEnd = groupEnd.next;
+            count++;
+        }
+        
+        // Store the next group's start
+        let nextGroupStart = groupEnd.next;
+        
+        // Disconnect current group from the rest of the list
+        if (groupEnd.next) {
+            groupEnd.next.prev = null;
+            groupEnd.next = null;
+        }
+        
+        // Reverse the current group
+        let reversedGroupHead = reverseGroup(groupStart);
+        
+        // Connect with previous group
+        if (prevGroupTail) {
+            prevGroupTail.next = reversedGroupHead;
+            reversedGroupHead.prev = prevGroupTail;
+        } else {
+            // This is the first group, so it becomes the new head
+            newHead = reversedGroupHead;
+        }
+        
+        // Update prevGroupTail to the tail of current reversed group
+        prevGroupTail = groupStart; // After reversal, groupStart becomes the tail
+        
+        // Move to next group
+        current = nextGroupStart;
+    }
+    
+    return newHead;
+}
+
+/**
+ * Helper function to reverse a group of nodes in doubly linked list
+ */
+function reverseGroup(head) {
+    let current = head;
+    let prev = null;
+    
+    while (current) {
+        let next = current.next;
+        
+        // Swap prev and next pointers
+        current.next = prev;
+        current.prev = next;
+        
+        prev = current;
+        current = next;
+    }
+    
+    return prev; // prev is now the new head of reversed group
+}
+
+/**
+ * Helper function to create a doubly linked list from array
+ */
+function createDoublyLinkedList(arr) {
+    if (arr.length === 0) return null;
+    
+    let head = new DoublyListNode(arr[0]);
+    let current = head;
+    
+    for (let i = 1; i < arr.length; i++) {
+        current.next = new DoublyListNode(arr[i]);
+        current.next.prev = current;
+        current = current.next;
+    }
+    
+    return head;
+}
+
+/**
+ * Helper function to convert doubly linked list to array for easy testing
+ */
+function doublyLinkedListToArray(head) {
+    let result = [];
+    let current = head;
+    
+    while (current) {
+        result.push(current.val);
+        current = current.next;
+    }
+    
+    return result;
+}
+
+/**
+ * Helper function to print doubly linked list with bidirectional arrows
+ */
+function printDoublyLinkedList(head) {
+    let result = [];
+    let current = head;
+    
+    while (current) {
+        result.push(current.val);
+        current = current.next;
+    }
+    
+    return result.join(' <-> ');
+}
+
+// TEST CASES
+
+console.log("=== Test Case 1: Basic rotation with k=3 ===");
+let arr1 = [1, 2, 3, 4, 5, 6, 7, 8];
+let list1 = createDoublyLinkedList(arr1);
+console.log("Original:", printDoublyLinkedList(list1));
+let rotated1 = rotateDoublyLinkedList(list1, 3);
+console.log("After rotation (k=3):", printDoublyLinkedList(rotated1));
+console.log("Expected: 3 <-> 2 <-> 1 <-> 6 <-> 5 <-> 4 <-> 8 <-> 7");
+console.log("Result:", doublyLinkedListToArray(rotated1));
+console.log();
+
+console.log("=== Test Case 2: k=2 ===");
+let arr2 = [1, 2, 3, 4, 5];
+let list2 = createDoublyLinkedList(arr2);
+console.log("Original:", printDoublyLinkedList(list2));
+let rotated2 = rotateDoublyLinkedList(list2, 2);
+console.log("After rotation (k=2):", printDoublyLinkedList(rotated2));
+console.log("Expected: 2 <-> 1 <-> 4 <-> 3 <-> 5");
+console.log("Result:", doublyLinkedListToArray(rotated2));
+console.log();
+
+console.log("=== Test Case 3: k greater than list length ===");
+let arr3 = [1, 2, 3];
+let list3 = createDoublyLinkedList(arr3);
+console.log("Original:", printDoublyLinkedList(list3));
+let rotated3 = rotateDoublyLinkedList(list3, 5);
+console.log("After rotation (k=5):", printDoublyLinkedList(rotated3));
+console.log("Expected: 3 <-> 2 <-> 1 (entire list reversed)");
+console.log("Result:", doublyLinkedListToArray(rotated3));
+console.log();
+
+console.log("=== Test Case 4: Single node ===");
+let arr4 = [1];
+let list4 = createDoublyLinkedList(arr4);
+console.log("Original:", printDoublyLinkedList(list4));
+let rotated4 = rotateDoublyLinkedList(list4, 2);
+console.log("After rotation (k=2):", printDoublyLinkedList(rotated4));
+console.log("Expected: 1 (no change)");
+console.log("Result:", doublyLinkedListToArray(rotated4));
+console.log();
+
+console.log("=== Test Case 5: k=1 (no rotation) ===");
+let arr5 = [1, 2, 3, 4];
+let list5 = createDoublyLinkedList(arr5);
+console.log("Original:", printDoublyLinkedList(list5));
+let rotated5 = rotateDoublyLinkedList(list5, 1);
+console.log("After rotation (k=1):", printDoublyLinkedList(rotated5));
+console.log("Expected: 1 <-> 2 <-> 3 <-> 4 (no change)");
+console.log("Result:", doublyLinkedListToArray(rotated5));
+console.log();
+
+/**
+ * VERIFICATION: Test bidirectional connectivity
+ */
+console.log("=== Verification: Testing bidirectional connectivity ===");
+let testList = createDoublyLinkedList([1, 2, 3, 4, 5, 6]);
+let rotatedTest = rotateDoublyLinkedList(testList, 3);
+
+// Forward traversal
+let forward = [];
+let current = rotatedTest;
+while (current) {
+    forward.push(current.val);
+    current = current.next;
+}
+
+// Backward traversal
+let backward = [];
+current = rotatedTest;
+// Go to the end first
+while (current.next) {
+    current = current.next;
+}
+// Traverse backward
+while (current) {
+    backward.push(current.val);
+    current = current.prev;
+}
+
+console.log("Forward traversal:", forward);
+console.log("Backward traversal:", backward);
+console.log("Is bidirectional connectivity correct?", 
+    JSON.stringify(forward) === JSON.stringify(backward.reverse()));
+
+/**
+ * COMPLEXITY ANALYSIS:
+ * 
+ * Time Complexity: O(n)
+ * - We visit each node exactly once during the rotation process
+ * - Each node is processed in constant time
+ * - Therefore, overall time complexity is O(n)
+ * 
+ * Space Complexity: O(1)
+ * - We only use a constant amount of extra space
+ * - No additional data structures are used
+ * - All operations are done in-place
+ * 
+ * KEY INSIGHTS:
+ * 1. The problem is essentially reversing groups of k nodes
+ * 2. We need to maintain both prev and next pointers for doubly linked list
+ * 3. Special care is needed for connecting groups together
+ * 4. Last group might have fewer than k nodes
+ */

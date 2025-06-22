@@ -1153,3 +1153,550 @@ console.log("1. Inversion Count: Time O(n log n), Space O(n)");
 console.log("2. In-Place Merge Sort: Time O(n log n), Space O(log n)");
 console.log("3. Dutch National Flag: Time O(n), Space O(1)");
 console.log("4. Counting Sort (many duplicates): Time O(n + k), Space O(k) where k is range");
+
+
+// ========================================
+// SEARCHING AND SORTING PROBLEMS
+// ========================================
+
+// Problem 1: Bishu and Soldiers
+// Question: Given an array of soldiers with their powers and Q queries, 
+// for each query find how many soldiers have power <= X and their total power
+// Approach: Sort the array and use binary search with prefix sums
+// Time Complexity: O(N log N + Q log N)
+
+function bishuAndSoldiers(soldiers, queries) {
+    // Sort soldiers by power
+    soldiers.sort((a, b) => a - b);
+    
+    // Create prefix sum array
+    const prefixSum = [0];
+    for (let i = 0; i < soldiers.length; i++) {
+        prefixSum[i + 1] = prefixSum[i] + soldiers[i];
+    }
+    
+    const results = [];
+    
+    for (let query of queries) {
+        // Binary search to find rightmost position where soldier[i] <= query
+        let left = 0, right = soldiers.length - 1;
+        let position = -1;
+        
+        while (left <= right) {
+            let mid = Math.floor((left + right) / 2);
+            if (soldiers[mid] <= query) {
+                position = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        
+        if (position === -1) {
+            results.push([0, 0]);
+        } else {
+            results.push([position + 1, prefixSum[position + 1]]);
+        }
+    }
+    
+    return results;
+}
+
+// Test Case for Bishu and Soldiers
+console.log("=== Bishu and Soldiers ===");
+const soldiers = [1, 2, 3, 4, 5];
+const queries = [3, 10, 1];
+console.log("Input:", soldiers, queries);
+console.log("Output:", bishuAndSoldiers(soldiers, queries));
+// Expected: [[3, 6], [5, 15], [1, 1]]
+
+// ========================================
+
+// Problem 2: Rasta and Kheshtak
+// Question: Find minimum time to cook all dishes when we have multiple cooks
+// Each cook can cook one dish at a time, find optimal assignment
+// Approach: Greedy - always assign dish to cook who will be free earliest
+// Time Complexity: O(N log K) where N = dishes, K = cooks
+
+function rastaAndKheshtak(dishes, numCooks) {
+    // Priority queue to track when each cook will be free
+    const cookFreeTimes = new Array(numCooks).fill(0);
+    
+    // Sort dishes in descending order (cook longer dishes first)
+    dishes.sort((a, b) => b - a);
+    
+    for (let dish of dishes) {
+        // Find cook who will be free earliest
+        let earliestCook = 0;
+        for (let i = 1; i < numCooks; i++) {
+            if (cookFreeTimes[i] < cookFreeTimes[earliestCook]) {
+                earliestCook = i;
+            }
+        }
+        
+        // Assign dish to this cook
+        cookFreeTimes[earliestCook] += dish;
+    }
+    
+    // Return maximum time (when last cook finishes)
+    return Math.max(...cookFreeTimes);
+}
+
+// Test Case for Rasta and Kheshtak
+console.log("\n=== Rasta and Kheshtak ===");
+const dishes = [10, 20, 30];
+const numCooks = 2;
+console.log("Input:", dishes, numCooks);
+console.log("Output:", rastaAndKheshtak(dishes, numCooks));
+// Expected: 30 (Cook1: 30, Cook2: 10+20=30)
+
+// ========================================
+
+// Problem 3: Kth Smallest Number Again
+// Question: Find Kth smallest number in range [L, R] after removing all numbers divisible by any prime in given set
+// Approach: Sieve + Binary Search + Inclusion-Exclusion Principle
+// Time Complexity: O(sqrt(R) + log(R) * 2^P) where P = number of primes
+
+function kthSmallestNumberAgain(L, R, primes, K) {
+    // Count numbers in range [1, X] that are NOT divisible by any prime
+    function countValid(X) {
+        if (X < L) return 0;
+        
+        let total = Math.min(X, R) - L + 1;
+        let n = primes.length;
+        
+        // Inclusion-exclusion principle
+        for (let mask = 1; mask < (1 << n); mask++) {
+            let product = 1;
+            let bits = 0;
+            
+            for (let i = 0; i < n; i++) {
+                if (mask & (1 << i)) {
+                    product *= primes[i];
+                    bits++;
+                    if (product > R) break;
+                }
+            }
+            
+            if (product <= R) {
+                let count = Math.floor(Math.min(X, R) / product) - Math.floor((L - 1) / product);
+                if (bits % 2 === 1) {
+                    total -= count;
+                } else {
+                    total += count;
+                }
+            }
+        }
+        
+        return total;
+    }
+    
+    // Binary search for Kth smallest
+    let left = L, right = R;
+    let result = -1;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        let count = countValid(mid);
+        
+        if (count >= K) {
+            result = mid;
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+    
+    return result;
+}
+
+// Test Case for Kth Smallest Number Again
+console.log("\n=== Kth Smallest Number Again ===");
+console.log("Input: L=2, R=10, primes=[2,3], K=3");
+console.log("Output:", kthSmallestNumberAgain(2, 10, [2, 3], 3));
+// Numbers not divisible by 2 or 3 in [2,10]: 5, 7 (2 numbers)
+// So 3rd smallest doesn't exist, should handle edge case
+
+// ========================================
+
+// Problem 4: EKOSPOJ - Cutting Trees
+// Question: Find minimum height to cut trees to get at least M units of wood
+// Approach: Binary search on answer
+// Time Complexity: O(N log H) where H = max height
+
+function ekoSpoj(trees, M) {
+    let left = 0, right = Math.max(...trees);
+    let result = 0;
+    
+    function getWood(height) {
+        let wood = 0;
+        for (let tree of trees) {
+            if (tree > height) {
+                wood += tree - height;
+            }
+        }
+        return wood;
+    }
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        let wood = getWood(mid);
+        
+        if (wood >= M) {
+            result = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return result;
+}
+
+// Test Case for EKOSPOJ
+console.log("\n=== EKOSPOJ ===");
+const trees = [20, 15, 10, 17];
+const M = 7;
+console.log("Input:", trees, "M =", M);
+console.log("Output:", ekoSpoj(trees, M));
+// If we cut at height 15: (20-15) + (17-15) = 5 + 2 = 7
+
+// ========================================
+
+// Problem 5: Job Scheduling Algorithm
+// Question: Schedule jobs with deadlines and profits to maximize profit
+// Approach: Greedy - sort by profit descending, use Union-Find for slot management
+// Time Complexity: O(N log N + N * α(N))
+
+function jobScheduling(jobs) {
+    // Sort jobs by profit in descending order
+    jobs.sort((a, b) => b.profit - a.profit);
+    
+    let maxDeadline = Math.max(...jobs.map(job => job.deadline));
+    let slots = new Array(maxDeadline + 1).fill(-1); // -1 means free
+    
+    function findFreeSlot(deadline) {
+        for (let i = deadline; i >= 1; i--) {
+            if (slots[i] === -1) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
+    let scheduledJobs = [];
+    let totalProfit = 0;
+    
+    for (let job of jobs) {
+        let slot = findFreeSlot(job.deadline);
+        if (slot !== -1) {
+            slots[slot] = job.id;
+            scheduledJobs.push(job);
+            totalProfit += job.profit;
+        }
+    }
+    
+    return { scheduledJobs, totalProfit };
+}
+
+// Test Case for Job Scheduling
+console.log("\n=== Job Scheduling ===");
+const jobs = [
+    { id: 'a', deadline: 2, profit: 100 },
+    { id: 'b', deadline: 1, profit: 19 },
+    { id: 'c', deadline: 2, profit: 27 },
+    { id: 'd', deadline: 1, profit: 25 },
+    { id: 'e', deadline: 3, profit: 15 }
+];
+console.log("Input:", jobs);
+console.log("Output:", jobScheduling(jobs));
+
+// ========================================
+
+// Problem 6: Missing Number in AP
+// Question: Find missing number in arithmetic progression
+// Approach: Binary search to find the position where pattern breaks
+// Time Complexity: O(log N)
+
+function missingNumberInAP(arr) {
+    let n = arr.length;
+    if (n <= 2) return null;
+    
+    // Find common difference
+    let d1 = arr[1] - arr[0];
+    let d2 = arr[2] - arr[1];
+    let d = (Math.abs(d1) < Math.abs(d2)) ? d1 : d2;
+    
+    let left = 0, right = n - 1;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        
+        // Check if arr[mid] is at correct position
+        if (arr[mid] === arr[0] + mid * d) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return arr[0] + left * d;
+}
+
+// Test Case for Missing Number in AP
+console.log("\n=== Missing Number in AP ===");
+const apArray = [2, 4, 8, 10, 12, 14];
+console.log("Input:", apArray);
+console.log("Output:", missingNumberInAP(apArray));
+// Missing number is 6
+
+// ========================================
+
+// Problem 7: Smallest number with at least n trailing zeroes in factorial
+// Question: Find smallest number whose factorial has at least n trailing zeros
+// Approach: Binary search + count trailing zeros in factorial
+// Time Complexity: O(log N * log N)
+
+function smallestNumberWithNTrailingZeros(n) {
+    function countTrailingZeros(num) {
+        let count = 0;
+        for (let i = 5; num / i > 0; i *= 5) {
+            count += Math.floor(num / i);
+        }
+        return count;
+    }
+    
+    let left = 0, right = 5 * n;
+    let result = -1;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        let zeros = countTrailingZeros(mid);
+        
+        if (zeros >= n) {
+            result = mid;
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+    
+    return result;
+}
+
+// Test Case for Trailing Zeros
+console.log("\n=== Smallest Number with N Trailing Zeros ===");
+console.log("Input: n = 5");
+console.log("Output:", smallestNumberWithNTrailingZeros(5));
+// 5! = 120 (1 zero), 10! = 3628800 (2 zeros), 15! has 3 zeros, 20! has 4 zeros, 25! has 6 zeros
+
+// ========================================
+
+// Problem 8: Painters Partition Problem
+// Question: Partition array to minimize maximum sum of any partition
+// Approach: Binary search on answer
+// Time Complexity: O(N log(sum))
+
+function paintersPartition(boards, painters) {
+    function canPaint(maxTime) {
+        let paintersUsed = 1;
+        let currentTime = 0;
+        
+        for (let board of boards) {
+            if (board > maxTime) return false;
+            
+            if (currentTime + board > maxTime) {
+                paintersUsed++;
+                currentTime = board;
+            } else {
+                currentTime += board;
+            }
+        }
+        
+        return paintersUsed <= painters;
+    }
+    
+    let left = Math.max(...boards);
+    let right = boards.reduce((sum, board) => sum + board, 0);
+    let result = right;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        
+        if (canPaint(mid)) {
+            result = mid;
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+    
+    return result;
+}
+
+// Test Case for Painters Partition
+console.log("\n=== Painters Partition Problem ===");
+const boards = [10, 20, 30, 40];
+const painters = 2;
+console.log("Input:", boards, "painters:", painters);
+console.log("Output:", paintersPartition(boards, painters));
+// Optimal: [10, 20, 30] and [40] -> max = 60
+
+// ========================================
+
+// Problem 9: ROTI-Prata SPOJ
+// Question: Find minimum time to cook P pratas with C cooks
+// Each cook takes R*(i+1) time for ith prata
+// Approach: Binary search on time
+// Time Complexity: O(log(time) * C)
+
+function rotiPrata(pratas, cooks) {
+    function canCookInTime(time) {
+        let totalPratas = 0;
+        
+        for (let cookTime of cooks) {
+            let pratasMade = 0;
+            let currentTime = 0;
+            let nextPrataTime = cookTime;
+            
+            while (currentTime + nextPrataTime <= time) {
+                currentTime += nextPrataTime;
+                pratasMade++;
+                nextPrataTime = cookTime * (pratasMade + 1);
+            }
+            
+            totalPratas += pratasMade;
+            if (totalPratas >= pratas) return true;
+        }
+        
+        return totalPratas >= pratas;
+    }
+    
+    let left = 1;
+    let right = Math.min(...cooks) * pratas * (pratas + 1) / 2;
+    let result = right;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        
+        if (canCookInTime(mid)) {
+            result = mid;
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+    
+    return result;
+}
+
+// Test Case for ROTI-Prata
+console.log("\n=== ROTI-Prata SPOJ ===");
+const P = 10; // pratas needed
+const cookTimes = [1, 2, 3, 4]; // cook speeds
+console.log("Input: pratas =", P, "cooks =", cookTimes);
+console.log("Output:", rotiPrata(P, cookTimes));
+
+// ========================================
+
+// Problem 10: DoubleHelix SPOJ
+// Question: Find maximum sum path through two sorted arrays
+// You can switch between arrays at common elements
+// Approach: Two pointers with path tracking
+// Time Complexity: O(N + M)
+
+function doubleHelix(arr1, arr2) {
+    let i = 0, j = 0;
+    let sum1 = 0, sum2 = 0;
+    let maxSum = 0;
+    
+    while (i < arr1.length && j < arr2.length) {
+        if (arr1[i] < arr2[j]) {
+            sum1 += arr1[i];
+            i++;
+        } else if (arr1[i] > arr2[j]) {
+            sum2 += arr2[j];
+            j++;
+        } else {
+            // Common element found
+            maxSum += Math.max(sum1, sum2) + arr1[i];
+            sum1 = sum2 = 0;
+            i++;
+            j++;
+        }
+    }
+    
+    // Add remaining elements
+    while (i < arr1.length) {
+        sum1 += arr1[i++];
+    }
+    while (j < arr2.length) {
+        sum2 += arr2[j++];
+    }
+    
+    maxSum += Math.max(sum1, sum2);
+    return maxSum;
+}
+
+// Test Case for DoubleHelix
+console.log("\n=== DoubleHelix SPOJ ===");
+const arr1 = [3, 6, 7, 8, 10, 12, 15, 18, 100];
+const arr2 = [1, 2, 3, 5, 7, 9, 10, 11, 15, 16, 18, 25, 50];
+console.log("Input:");
+console.log("Array 1:", arr1);
+console.log("Array 2:", arr2);
+console.log("Output:", doubleHelix(arr1, arr2));
+// Path: 1+2 -> 3 -> 6+7 -> 7 -> skip to 10 -> skip to 15 -> skip to 18 -> 25+50
+
+// ========================================
+
+// Problem 11: Subset Sums
+// Question: Given array, find all possible subset sums
+// Approach: Dynamic Programming or Recursive generation
+// Time Complexity: O(N * 2^N) for generation, O(N * sum) for DP approach
+
+function subsetSums(arr) {
+    const sums = [];
+    
+    function generateSums(index, currentSum) {
+        if (index === arr.length) {
+            sums.push(currentSum);
+            return;
+        }
+        
+        // Include current element
+        generateSums(index + 1, currentSum + arr[index]);
+        
+        // Exclude current element
+        generateSums(index + 1, currentSum);
+    }
+    
+    generateSums(0, 0);
+    return sums.sort((a, b) => a - b);
+}
+
+// Alternative DP approach for checking if specific sum is possible
+function canMakeSum(arr, targetSum) {
+    const dp = new Array(targetSum + 1).fill(false);
+    dp[0] = true;
+    
+    for (let num of arr) {
+        for (let sum = targetSum; sum >= num; sum--) {
+            dp[sum] = dp[sum] || dp[sum - num];
+        }
+    }
+    
+    return dp[targetSum];
+}
+
+// Test Case for Subset Sums
+console.log("\n=== Subset Sums ===");
+const subsetArray = [1, 2, 3];
+console.log("Input:", subsetArray);
+console.log("All subset sums:", subsetSums(subsetArray));
+// Expected: [0, 1, 2, 3, 3, 4, 5, 6] -> sorted: [0, 1, 2, 3, 3, 4, 5, 6]
+
+console.log("Can make sum 4?", canMakeSum(subsetArray, 4)); // true (1+3)
+console.log("Can make sum 7?", canMakeSum(subsetArray, 7)); // false
+
+console.log("\n=== All Problems Completed ===");

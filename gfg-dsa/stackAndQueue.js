@@ -1454,3 +1454,430 @@ const smallerArray = [4, 5, 2, 25, 7, 8];
 console.log("Next smaller elements:", nextSmallerElement(smallerArray)); // [2, 2, -1, 7, -1, -1]
 
 console.log("\n=== ALL TESTS COMPLETED ===");
+
+
+
+// ===================================================================================================
+// Problem 1: Implement Stack using Deque
+// ===================================================================================================
+
+/*
+Question: Implement a stack using deque (double-ended queue) operations.
+A deque supports insertion and deletion at both ends.
+
+Approach:
+- Use deque operations to simulate stack behavior (LIFO - Last In First Out)
+- For stack operations:
+  * push() -> add element to rear of deque
+  * pop() -> remove element from rear of deque
+  * top() -> get element from rear of deque
+  * isEmpty() -> check if deque is empty
+
+Time Complexity: O(1) for all operations
+Space Complexity: O(n) where n is number of elements
+*/
+
+class StackUsingDeque {
+    constructor() {
+        this.deque = [];
+    }
+    
+    // Push element to stack (add to rear of deque)
+    push(element) {
+        this.deque.push(element);
+    }
+    
+    // Pop element from stack (remove from rear of deque)
+    pop() {
+        if (this.isEmpty()) {
+            throw new Error("Stack is empty");
+        }
+        return this.deque.pop();
+    }
+    
+    // Get top element (peek at rear of deque)
+    top() {
+        if (this.isEmpty()) {
+            throw new Error("Stack is empty");
+        }
+        return this.deque[this.deque.length - 1];
+    }
+    
+    // Check if stack is empty
+    isEmpty() {
+        return this.deque.length === 0;
+    }
+    
+    // Get size of stack
+    size() {
+        return this.deque.length;
+    }
+}
+
+// Test Case for Problem 1
+console.log("=== Problem 1 Test Cases ===");
+const stack1 = new StackUsingDeque();
+stack.push(10);
+stack.push(20);
+stack.push(30);
+console.log("Top element:", stack1.top()); // 30
+console.log("Popped:", stack1.pop()); // 30
+console.log("Top after pop:", stack1.top()); // 20
+console.log("Stack size:", stack1.size()); // 2
+console.log("Is empty:", stack1.isEmpty()); // false
+
+// ===================================================================================================
+// Problem 2: Stack Permutations (Check if an array is stack permutation of other)
+// ===================================================================================================
+
+/*
+Question: Given two arrays, check if one array is a stack permutation of another.
+A stack permutation means we can obtain the second array from the first by using
+push and pop operations on a stack.
+
+Approach:
+- Use a stack to simulate the process
+- For each element in the target array:
+  * If stack is not empty and top equals current target element, pop from stack
+  * Otherwise, push elements from input array until we find the target element
+  * If we can't find the target element, return false
+
+Time Complexity: O(n) where n is length of arrays
+Space Complexity: O(n) for the stack
+*/
+
+function isStackPermutation(input, output) {
+    if (input.length !== output.length) return false;
+    
+    const stack = [];
+    let inputIndex = 0;
+    let outputIndex = 0;
+    
+    while (outputIndex < output.length) {
+        // If stack top matches current output element, pop it
+        if (stack.length > 0 && stack[stack.length - 1] === output[outputIndex]) {
+            stack.pop();
+            outputIndex++;
+        }
+        // Push elements from input until we find the required element
+        else if (inputIndex < input.length) {
+            stack.push(input[inputIndex]);
+            inputIndex++;
+        }
+        // If we can't proceed further, it's not a valid permutation
+        else {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Test Cases for Problem 2
+console.log("\n=== Problem 2 Test Cases ===");
+console.log("Test 1:", isStackPermutation([1, 2, 3], [2, 1, 3])); // true
+console.log("Test 2:", isStackPermutation([1, 2, 3], [3, 1, 2])); // false
+console.log("Test 3:", isStackPermutation([1, 2, 3, 4], [4, 3, 2, 1])); // true
+console.log("Test 4:", isStackPermutation([1, 2, 3], [3, 2, 1])); // true
+
+// ===================================================================================================
+// Problem 3: Check if all levels of two trees are anagrams or not
+// ===================================================================================================
+
+/*
+Question: Given two binary trees, check if all corresponding levels are anagrams.
+Two levels are anagrams if they contain the same elements with same frequency.
+
+Approach:
+- Use level-order traversal (BFS) for both trees simultaneously
+- For each level, collect all node values
+- Check if the values at each level form anagrams
+- Continue until both trees are completely traversed
+
+Time Complexity: O(n) where n is total number of nodes
+Space Complexity: O(w) where w is maximum width of tree
+*/
+
+class TreeNode {
+    constructor(val) {
+        this.val = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+function areAnagrams(arr1, arr2) {
+    if (arr1.length !== arr2.length) return false;
+    
+    const freq1 = {};
+    const freq2 = {};
+    
+    // Count frequency in first array
+    for (let val of arr1) {
+        freq1[val] = (freq1[val] || 0) + 1;
+    }
+    
+    // Count frequency in second array
+    for (let val of arr2) {
+        freq2[val] = (freq2[val] || 0) + 1;
+    }
+    
+    // Compare frequencies
+    for (let key in freq1) {
+        if (freq1[key] !== freq2[key]) return false;
+    }
+    
+    return Object.keys(freq1).length === Object.keys(freq2).length;
+}
+
+function areTreeLevelsAnagrams(root1, root2) {
+    if (!root1 && !root2) return true;
+    if (!root1 || !root2) return false;
+    
+    const queue1 = [root1];
+    const queue2 = [root2];
+    
+    while (queue1.length > 0 || queue2.length > 0) {
+        const level1 = [];
+        const level2 = [];
+        const size1 = queue1.length;
+        const size2 = queue2.length;
+        
+        // Process current level of tree1
+        for (let i = 0; i < size1; i++) {
+            const node = queue1.shift();
+            level1.push(node.val);
+            if (node.left) queue1.push(node.left);
+            if (node.right) queue1.push(node.right);
+        }
+        
+        // Process current level of tree2
+        for (let i = 0; i < size2; i++) {
+            const node = queue2.shift();
+            level2.push(node.val);
+            if (node.left) queue2.push(node.left);
+            if (node.right) queue2.push(node.right);
+        }
+        
+        // Check if current levels are anagrams
+        if (!areAnagrams(level1, level2)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Test Cases for Problem 3
+console.log("\n=== Problem 3 Test Cases ===");
+// Tree 1:     1        Tree 2:     1
+//           /   \                /   \
+//          2     3              3     2
+//         / \   /              / \   /
+//        4   5 6              6   4 5
+
+const tree1 = new TreeNode(1);
+tree1.left = new TreeNode(2);
+tree1.right = new TreeNode(3);
+tree1.left.left = new TreeNode(4);
+tree1.left.right = new TreeNode(5);
+tree1.right.left = new TreeNode(6);
+
+const tree2 = new TreeNode(1);
+tree2.left = new TreeNode(3);
+tree2.right = new TreeNode(2);
+tree2.left.left = new TreeNode(6);
+tree2.left.right = new TreeNode(4);
+tree2.right.left = new TreeNode(5);
+
+console.log("Trees have anagram levels:", areTreeLevelsAnagrams(tree1, tree2)); // true
+
+// ===================================================================================================
+// Problem 4: Minimum sum of squares of character counts after removing "k" characters
+// ===================================================================================================
+
+/*
+Question: Given a string, remove k characters such that the sum of squares of 
+character frequencies is minimized.
+
+Approach:
+- Count frequency of each character
+- Use a max heap (priority queue) to always remove from the character with highest frequency
+- Remove k characters one by one from the character with maximum frequency
+- Calculate sum of squares of remaining frequencies
+
+Time Complexity: O(n + k*log(unique_chars)) where n is string length
+Space Complexity: O(unique_chars) for frequency map and heap
+*/
+
+class MaxHeap {
+    constructor() {
+        this.heap = [];
+    }
+    
+    push(val) {
+        this.heap.push(val);
+        this.heapifyUp(this.heap.length - 1);
+    }
+    
+    pop() {
+        if (this.heap.length === 0) return null;
+        if (this.heap.length === 1) return this.heap.pop();
+        
+        const max = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this.heapifyDown(0);
+        return max;
+    }
+    
+    peek() {
+        return this.heap.length > 0 ? this.heap[0] : null;
+    }
+    
+    heapifyUp(index) {
+        if (index === 0) return;
+        const parentIndex = Math.floor((index - 1) / 2);
+        if (this.heap[parentIndex] < this.heap[index]) {
+            [this.heap[parentIndex], this.heap[index]] = [this.heap[index], this.heap[parentIndex]];
+            this.heapifyUp(parentIndex);
+        }
+    }
+    
+    heapifyDown(index) {
+        const leftChild = 2 * index + 1;
+        const rightChild = 2 * index + 2;
+        let largest = index;
+        
+        if (leftChild < this.heap.length && this.heap[leftChild] > this.heap[largest]) {
+            largest = leftChild;
+        }
+        
+        if (rightChild < this.heap.length && this.heap[rightChild] > this.heap[largest]) {
+            largest = rightChild;
+        }
+        
+        if (largest !== index) {
+            [this.heap[index], this.heap[largest]] = [this.heap[largest], this.heap[index]];
+            this.heapifyDown(largest);
+        }
+    }
+    
+    size() {
+        return this.heap.length;
+    }
+}
+
+function minSumSquares(str, k) {
+    // Count character frequencies
+    const freq = {};
+    for (let char of str) {
+        freq[char] = (freq[char] || 0) + 1;
+    }
+    
+    // Create max heap with frequencies
+    const maxHeap = new MaxHeap();
+    for (let count of Object.values(freq)) {
+        maxHeap.push(count);
+    }
+    
+    // Remove k characters by reducing max frequency each time
+    for (let i = 0; i < k; i++) {
+        const maxFreq = maxHeap.pop();
+        if (maxFreq > 1) {
+            maxHeap.push(maxFreq - 1);
+        }
+    }
+    
+    // Calculate sum of squares
+    let sumSquares = 0;
+    while (maxHeap.size() > 0) {
+        const freq = maxHeap.pop();
+        sumSquares += freq * freq;
+    }
+    
+    return sumSquares;
+}
+
+// Test Cases for Problem 4
+console.log("\n=== Problem 4 Test Cases ===");
+console.log("Test 1:", minSumSquares("abccc", 1)); // 6 (remove one 'c': a=1, b=1, c=2; 1²+1²+2²=6)
+console.log("Test 2:", minSumSquares("aaab", 2)); // 2 (remove two 'a': a=1, b=1; 1²+1²=2)
+console.log("Test 3:", minSumSquares("aabcbc", 2)); // 6
+
+// ===================================================================================================
+// Problem 5: Queue based approach for first non-repeating character in a stream
+// ===================================================================================================
+
+/*
+Question: Find the first non-repeating character in a stream of characters.
+For each character addition, return the first non-repeating character.
+
+Approach:
+- Use a queue to maintain order of characters
+- Use a frequency map to track character counts
+- For each new character:
+  * Add to frequency map
+  * Add to queue if frequency is 1
+  * Remove from front of queue all characters with frequency > 1
+  * Return front of queue (first non-repeating character)
+
+Time Complexity: O(1) amortized for each character addition
+Space Complexity: O(n) for queue and frequency map
+*/
+
+class FirstNonRepeating {
+    constructor() {
+        this.queue = [];
+        this.freq = {};
+    }
+    
+    addCharacter(char) {
+        // Update frequency
+        this.freq[char] = (this.freq[char] || 0) + 1;
+        
+        // Add to queue if it's the first occurrence
+        if (this.freq[char] === 1) {
+            this.queue.push(char);
+        }
+        
+        // Remove characters from front that have frequency > 1
+        while (this.queue.length > 0 && this.freq[this.queue[0]] > 1) {
+            this.queue.shift();
+        }
+        
+        // Return first non-repeating character or null
+        return this.queue.length > 0 ? this.queue[0] : null;
+    }
+    
+    getFirstNonRepeating() {
+        return this.queue.length > 0 ? this.queue[0] : null;
+    }
+}
+
+// Alternative implementation that processes entire stream at once
+function firstNonRepeatingInStream(stream) {
+    const result = [];
+    const fnr = new FirstNonRepeating();
+    
+    for (let char of stream) {
+        const firstNonRep = fnr.addCharacter(char);
+        result.push(firstNonRep || -1);
+    }
+    
+    return result;
+}
+
+// Test Cases for Problem 5
+console.log("\n=== Problem 5 Test Cases ===");
+const fnr = new FirstNonRepeating();
+console.log("Stream processing:");
+console.log("Add 'a':", fnr.addCharacter('a')); // 'a'
+console.log("Add 'b':", fnr.addCharacter('b')); // 'a'
+console.log("Add 'a':", fnr.addCharacter('a')); // 'b'
+console.log("Add 'c':", fnr.addCharacter('c')); // 'b'
+console.log("Add 'b':", fnr.addCharacter('b')); // 'c'
+
+console.log("\nStream result for 'aabacbcb':", firstNonRepeatingInStream('aabacbcb'));
+// Expected: ['a', 'a', 'b', 'b', 'c', 'c', 'c', null]
+
+console.log("\n=== All Problems Completed Successfully! ===");

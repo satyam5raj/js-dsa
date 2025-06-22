@@ -2478,3 +2478,570 @@ console.log("Complex pairs - DP:", findLongestChainDP([...pairs3])); // 4
 console.log();
 
 console.log("All Dynamic Programming problems solved with test cases!");
+
+
+
+
+// =============================================================================
+// DYNAMIC PROGRAMMING PROBLEMS SOLUTIONS
+// =============================================================================
+
+// 1. ASSEMBLY LINE SCHEDULING PROBLEM
+/*
+Problem: Find minimum time to travel through assembly line with two lines,
+each having n stations. Can switch between lines with transfer cost.
+
+Approach: DP where dp[i][j] represents minimum time to reach station i on line j
+- For each station, choose minimum of staying on same line or switching
+- Add processing time for current station
+
+Time Complexity: O(n)
+Space Complexity: O(1) - can be optimized to constant space
+*/
+function assemblyLineScheduling(a, t, e, x) {
+    const n = a[0].length;
+    
+    // dp[i] represents minimum time to reach station i on line 0 and 1
+    let dp0 = e[0] + a[0][0]; // First station on line 0
+    let dp1 = e[1] + a[1][0]; // First station on line 1
+    
+    // Fill for remaining stations
+    for (let i = 1; i < n; i++) {
+        let newDp0 = Math.min(dp0 + a[0][i], dp1 + t[1][i] + a[0][i]);
+        let newDp1 = Math.min(dp1 + a[1][i], dp0 + t[0][i] + a[1][i]);
+        
+        dp0 = newDp0;
+        dp1 = newDp1;
+    }
+    
+    // Add exit time and return minimum
+    return Math.min(dp0 + x[0], dp1 + x[1]);
+}
+
+// Test case for Assembly Line Scheduling
+const a = [[4, 5, 3, 2], [2, 10, 1, 4]]; // Processing times
+const t = [[0, 7, 4, 5], [0, 9, 2, 8]]; // Transfer times
+const e = [10, 12]; // Entry times
+const x = [18, 7]; // Exit times
+console.log("Assembly Line Scheduling:", assemblyLineScheduling(a, t, e, x)); // Expected: 35
+
+// =============================================================================
+
+// 2. PAINTING THE FENCE PROBLEM
+/*
+Problem: Paint n posts with k colors such that no more than 2 adjacent posts 
+have the same color.
+
+Approach: DP with two states
+- same[i]: ways to paint i posts where last two have same color
+- diff[i]: ways to paint i posts where last two have different colors
+
+Time Complexity: O(n)
+Space Complexity: O(1)
+*/
+function paintFence(n, k) {
+    if (n === 0) return 0;
+    if (n === 1) return k;
+    if (n === 2) return k * k;
+    
+    let same = k; // Ways to paint 2 posts with same color
+    let diff = k * (k - 1); // Ways to paint 2 posts with different colors
+    
+    for (let i = 3; i <= n; i++) {
+        let newSame = diff; // Previous different becomes same
+        let newDiff = (same + diff) * (k - 1); // Both can become different
+        
+        same = newSame;
+        diff = newDiff;
+    }
+    
+    return same + diff;
+}
+
+// Test case for Painting Fence
+console.log("Paint Fence (n=3, k=2):", paintFence(3, 2)); // Expected: 6
+
+// =============================================================================
+
+// 3. MAXIMIZE THE CUT SEGMENTS
+/*
+Problem: Given a rod of length n, cut it into segments of lengths a, b, c
+to maximize number of segments.
+
+Approach: DP where dp[i] represents maximum segments for length i
+- For each length, try all possible cuts and take maximum
+
+Time Complexity: O(n)
+Space Complexity: O(n)
+*/
+function maximizeCutSegments(n, a, b, c) {
+    const dp = new Array(n + 1).fill(-1);
+    dp[0] = 0;
+    
+    for (let i = 1; i <= n; i++) {
+        if (i >= a && dp[i - a] !== -1) {
+            dp[i] = Math.max(dp[i], dp[i - a] + 1);
+        }
+        if (i >= b && dp[i - b] !== -1) {
+            dp[i] = Math.max(dp[i], dp[i - b] + 1);
+        }
+        if (i >= c && dp[i - c] !== -1) {
+            dp[i] = Math.max(dp[i], dp[i - c] + 1);
+        }
+    }
+    
+    return dp[n] === -1 ? 0 : dp[n];
+}
+
+// Test case for Maximize Cut Segments
+console.log("Maximize Cut Segments (n=7, cuts=[5,5,2]):", maximizeCutSegments(7, 5, 5, 2)); // Expected: 2
+
+// =============================================================================
+
+// 4. LONGEST REPEATED SUBSEQUENCE
+/*
+Problem: Find length of longest subsequence that repeats in the string.
+
+Approach: Modified LCS where we find LCS of string with itself,
+but don't match characters at same positions.
+
+Time Complexity: O(n²)
+Space Complexity: O(n²)
+*/
+function longestRepeatedSubsequence(s) {
+    const n = s.length;
+    const dp = Array(n + 1).fill().map(() => Array(n + 1).fill(0));
+    
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s[i - 1] === s[j - 1] && i !== j) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    
+    return dp[n][n];
+}
+
+// Test case for Longest Repeated Subsequence
+console.log("Longest Repeated Subsequence 'aabebcdd':", longestRepeatedSubsequence("aabebcdd")); // Expected: 3
+
+// =============================================================================
+
+// 5. SPACE OPTIMIZED SOLUTION OF LCS
+/*
+Problem: Find LCS using O(min(m,n)) space instead of O(m*n).
+
+Approach: Use only two rows instead of full 2D array since we only need
+previous row to calculate current row.
+
+Time Complexity: O(m*n)
+Space Complexity: O(min(m,n))
+*/
+function lcsSpaceOptimized(s1, s2) {
+    const m = s1.length, n = s2.length;
+    
+    // Make s1 the shorter string to optimize space
+    if (m > n) return lcsSpaceOptimized(s2, s1);
+    
+    let prev = new Array(n + 1).fill(0);
+    let curr = new Array(n + 1).fill(0);
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s1[i - 1] === s2[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+            } else {
+                curr[j] = Math.max(prev[j], curr[j - 1]);
+            }
+        }
+        [prev, curr] = [curr, prev]; // Swap arrays
+    }
+    
+    return prev[n];
+}
+
+// Test case for Space Optimized LCS
+console.log("LCS Space Optimized ('ABCDGH', 'AEDFHR'):", lcsSpaceOptimized("ABCDGH", "AEDFHR")); // Expected: 3
+
+// =============================================================================
+
+// 6. LCS OF THREE STRINGS
+/*
+Problem: Find length of longest common subsequence among three strings.
+
+Approach: 3D DP where dp[i][j][k] represents LCS length for first i chars
+of s1, first j chars of s2, and first k chars of s3.
+
+Time Complexity: O(m*n*p)
+Space Complexity: O(m*n*p)
+*/
+function lcsThreeStrings(s1, s2, s3) {
+    const m = s1.length, n = s2.length, p = s3.length;
+    const dp = Array(m + 1).fill().map(() => 
+        Array(n + 1).fill().map(() => Array(p + 1).fill(0))
+    );
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            for (let k = 1; k <= p; k++) {
+                if (s1[i - 1] === s2[j - 1] && s2[j - 1] === s3[k - 1]) {
+                    dp[i][j][k] = dp[i - 1][j - 1][k - 1] + 1;
+                } else {
+                    dp[i][j][k] = Math.max(
+                        dp[i - 1][j][k],
+                        dp[i][j - 1][k],
+                        dp[i][j][k - 1]
+                    );
+                }
+            }
+        }
+    }
+    
+    return dp[m][n][p];
+}
+
+// Test case for LCS of Three Strings
+console.log("LCS Three Strings ('geeks', 'geeksfor', 'geeksforgeeks'):", 
+    lcsThreeStrings("geeks", "geeksfor", "geeksforgeeks")); // Expected: 5
+
+// =============================================================================
+
+// 7. MAXIMUM SUM INCREASING SUBSEQUENCE
+/*
+Problem: Find maximum sum of increasing subsequence in array.
+
+Approach: DP where dp[i] represents maximum sum of increasing subsequence
+ending at index i.
+
+Time Complexity: O(n²)
+Space Complexity: O(n)
+*/
+function maxSumIncreasingSubsequence(arr) {
+    const n = arr.length;
+    const dp = [...arr]; // Initialize with array elements
+    
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (arr[j] < arr[i]) {
+                dp[i] = Math.max(dp[i], dp[j] + arr[i]);
+            }
+        }
+    }
+    
+    return Math.max(...dp);
+}
+
+// Test case for Maximum Sum Increasing Subsequence
+console.log("Max Sum Increasing Subsequence [1, 101, 2, 3, 100, 4, 5]:", 
+    maxSumIncreasingSubsequence([1, 101, 2, 3, 100, 4, 5])); // Expected: 106
+
+// =============================================================================
+
+// 8. COUNT ALL SUBSEQUENCES HAVING PRODUCT LESS THAN K
+/*
+Problem: Count subsequences whose product is less than K.
+
+Approach: DP where dp[i][j] represents count of subsequences using first i
+elements with product j.
+
+Time Complexity: O(n*K)
+Space Complexity: O(K)
+*/
+function countSubsequencesWithProductLessThanK(arr, k) {
+    const n = arr.length;
+    const dp = new Array(k).fill(0);
+    dp[1] = 1; // Empty subsequence has product 1
+    
+    for (let i = 0; i < n; i++) {
+        for (let j = k - 1; j >= 1; j--) {
+            if (j * arr[i] < k && dp[j] > 0) {
+                dp[j * arr[i]] += dp[j];
+            }
+        }
+    }
+    
+    let result = 0;
+    for (let i = 1; i < k; i++) {
+        result += dp[i];
+    }
+    
+    return result - 1; // Subtract empty subsequence
+}
+
+// Test case for Count Subsequences with Product < K
+console.log("Count Subsequences Product < K ([1,2,3,4], k=10):", 
+    countSubsequencesWithProductLessThanK([1, 2, 3, 4], 10)); // Expected: 11
+
+// =============================================================================
+
+// 9. LONGEST SUBSEQUENCE SUCH THAT DIFFERENCE BETWEEN ADJACENT IS ONE
+/*
+Problem: Find longest subsequence where difference between adjacent elements is 1.
+
+Approach: DP where we track longest subsequence ending at each element.
+For each element, check elements with difference of 1.
+
+Time Complexity: O(n²)
+Space Complexity: O(n)
+*/
+function longestSubsequenceWithDiffOne(arr) {
+    const n = arr.length;
+    const dp = new Array(n).fill(1);
+    
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (Math.abs(arr[i] - arr[j]) === 1) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
+        }
+    }
+    
+    return Math.max(...dp);
+}
+
+// Test case for Longest Subsequence with Diff One
+console.log("Longest Subsequence Diff One [1, 2, 3, 4, 5, 3, 2]:", 
+    longestSubsequenceWithDiffOne([1, 2, 3, 4, 5, 3, 2])); // Expected: 6
+
+// =============================================================================
+
+// 10. MAXIMUM SUBSEQUENCE SUM SUCH THAT NO THREE ARE CONSECUTIVE
+/*
+Problem: Find maximum sum of subsequence where no three elements are consecutive.
+
+Approach: DP with three states for each position:
+- incl: include current element
+- excl: exclude current element
+
+Time Complexity: O(n)
+Space Complexity: O(1)
+*/
+function maxSumNoThreeConsecutive(arr) {
+    const n = arr.length;
+    if (n === 0) return 0;
+    if (n === 1) return arr[0];
+    if (n === 2) return arr[0] + arr[1];
+    
+    const dp = new Array(n);
+    dp[0] = arr[0];
+    dp[1] = arr[0] + arr[1];
+    dp[2] = Math.max(dp[1], Math.max(arr[1] + arr[2], arr[0] + arr[2]));
+    
+    for (let i = 3; i < n; i++) {
+        dp[i] = Math.max(
+            dp[i - 1], // Exclude current
+            dp[i - 2] + arr[i], // Include current, exclude previous
+            dp[i - 3] + arr[i - 1] + arr[i] // Include current and previous
+        );
+    }
+    
+    return dp[n - 1];
+}
+
+// Test case for Max Sum No Three Consecutive
+console.log("Max Sum No Three Consecutive [100, 1000, 100, 1000, 1]:", 
+    maxSumNoThreeConsecutive([100, 1000, 100, 1000, 1])); // Expected: 2101
+
+// =============================================================================
+
+// 11. MAXIMUM LENGTH CHAIN OF PAIRS
+/*
+Problem: Find maximum length chain of pairs where pairs are chained if
+second element of first pair is smaller than first element of second pair.
+
+Approach: Sort pairs by second element, then use DP similar to LIS.
+
+Time Complexity: O(n²)
+Space Complexity: O(n)
+*/
+function maxLengthChain(pairs) {
+    const n = pairs.length;
+    // Sort by second element
+    pairs.sort((a, b) => a[1] - b[1]);
+    
+    const dp = new Array(n).fill(1);
+    
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (pairs[j][1] < pairs[i][0]) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
+        }
+    }
+    
+    return Math.max(...dp);
+}
+
+// Test case for Maximum Length Chain
+console.log("Max Length Chain [[1,2], [2,3], [3,4]]:", 
+    maxLengthChain([[1, 2], [2, 3], [3, 4]])); // Expected: 2
+
+// =============================================================================
+
+// 12. MAXIMUM SIZE SQUARE SUB-MATRIX WITH ALL 1s
+/*
+Problem: Find size of largest square sub-matrix with all 1s.
+
+Approach: DP where dp[i][j] represents size of largest square ending at (i,j).
+If matrix[i][j] is 1, then dp[i][j] = min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]) + 1
+
+Time Complexity: O(m*n)
+Space Complexity: O(m*n) - can be optimized to O(n)
+*/
+function maxSquareSubmatrix(matrix) {
+    const m = matrix.length, n = matrix[0].length;
+    const dp = Array(m).fill().map(() => Array(n).fill(0));
+    let maxSize = 0;
+    
+    // Fill first row and column
+    for (let i = 0; i < m; i++) {
+        dp[i][0] = matrix[i][0];
+        maxSize = Math.max(maxSize, dp[i][0]);
+    }
+    for (let j = 0; j < n; j++) {
+        dp[0][j] = matrix[0][j];
+        maxSize = Math.max(maxSize, dp[0][j]);
+    }
+    
+    // Fill rest of the dp table
+    for (let i = 1; i < m; i++) {
+        for (let j = 1; j < n; j++) {
+            if (matrix[i][j] === 1) {
+                dp[i][j] = Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]) + 1;
+                maxSize = Math.max(maxSize, dp[i][j]);
+            }
+        }
+    }
+    
+    return maxSize;
+}
+
+// Test case for Maximum Square Submatrix
+const matrix = [
+    [0, 1, 1, 0, 1],
+    [1, 1, 0, 1, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 1, 1, 0]
+];
+console.log("Max Square Submatrix:", maxSquareSubmatrix(matrix)); // Expected: 2
+
+// =============================================================================
+
+// 13. MAXIMUM SUM OF PAIRS WITH SPECIFIC DIFFERENCE
+/*
+Problem: Find maximum sum of pairs where difference between elements is exactly K.
+
+Approach: Sort array, then use DP to decide whether to include current element
+in a pair or not.
+
+Time Complexity: O(n log n)
+Space Complexity: O(1)
+*/
+function maxSumPairsWithDiff(arr, k) {
+    arr.sort((a, b) => a - b);
+    const n = arr.length;
+    let maxSum = 0;
+    let i = 0;
+    
+    while (i < n - 1) {
+        if (arr[i + 1] - arr[i] === k) {
+            maxSum += arr[i] + arr[i + 1];
+            i += 2; // Skip both elements as they form a pair
+        } else {
+            i++;
+        }
+    }
+    
+    return maxSum;
+}
+
+// Test case for Maximum Sum Pairs with Difference
+console.log("Max Sum Pairs with Diff ([1, 3, 3, 5, 4], k=2):", 
+    maxSumPairsWithDiff([1, 3, 3, 5, 4], 2)); // Expected: 8
+
+// =============================================================================
+
+// 14. MIN COST PATH PROBLEM
+/*
+Problem: Find minimum cost path from top-left to bottom-right in a matrix.
+Can move right, down, or diagonally down-right.
+
+Approach: DP where dp[i][j] represents minimum cost to reach cell (i,j).
+
+Time Complexity: O(m*n)
+Space Complexity: O(m*n) - can be optimized to O(n)
+*/
+function minCostPath(cost) {
+    const m = cost.length, n = cost[0].length;
+    const dp = Array(m).fill().map(() => Array(n).fill(0));
+    
+    dp[0][0] = cost[0][0];
+    
+    // Fill first row
+    for (let j = 1; j < n; j++) {
+        dp[0][j] = dp[0][j - 1] + cost[0][j];
+    }
+    
+    // Fill first column
+    for (let i = 1; i < m; i++) {
+        dp[i][0] = dp[i - 1][0] + cost[i][0];
+    }
+    
+    // Fill rest of the table
+    for (let i = 1; i < m; i++) {
+        for (let j = 1; j < n; j++) {
+            dp[i][j] = cost[i][j] + Math.min(
+                dp[i - 1][j],     // From top
+                dp[i][j - 1],     // From left
+                dp[i - 1][j - 1]  // From diagonal
+            );
+        }
+    }
+    
+    return dp[m - 1][n - 1];
+}
+
+// Test case for Min Cost Path
+const costMatrix = [
+    [1, 2, 3],
+    [4, 8, 2],
+    [1, 5, 3]
+];
+console.log("Min Cost Path:", minCostPath(costMatrix)); // Expected: 8
+
+// =============================================================================
+
+// 15. MAXIMUM DIFFERENCE OF ZEROS AND ONES IN BINARY STRING
+/*
+Problem: Find maximum value of (count of 0s - count of 1s) in any substring.
+
+Approach: Convert problem to maximum subarray sum by treating 0 as +1 and 1 as -1.
+Use Kadane's algorithm.
+
+Time Complexity: O(n)
+Space Complexity: O(1)
+*/
+function maxDifferenceZerosOnes(s) {
+    let maxDiff = 0;
+    let currentDiff = 0;
+    
+    for (let char of s) {
+        // Treat '0' as +1 and '1' as -1
+        const value = char === '0' ? 1 : -1;
+        currentDiff = Math.max(value, currentDiff + value);
+        maxDiff = Math.max(maxDiff, currentDiff);
+    }
+    
+    return maxDiff;
+}
+
+// Test case for Maximum Difference of Zeros and Ones
+console.log("Max Difference Zeros-Ones '11000010001':", 
+    maxDifferenceZerosOnes("11000010001")); // Expected: 6
+
+// =============================================================================
+// ALL PROBLEMS SOLVED WITH OPTIMAL APPROACHES AND TEST CASES
+// =============================================================================
